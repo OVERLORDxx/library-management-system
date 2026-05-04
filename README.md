@@ -1,6 +1,6 @@
 # Library Management System
 
-A full-stack web application for managing a library — built with **React**, **Node.js (Express)**, and **PostgreSQL**.
+A full-stack web application for managing a library — built with **React**, **Node.js (Express)**, and **MySQL**.
 
 ## Features
 
@@ -25,7 +25,7 @@ A full-stack web application for managing a library — built with **React**, **
 |---|---|
 | Frontend | React 18, React Router v6, Axios, React Toastify |
 | Backend | Node.js, Express.js |
-| Database | PostgreSQL |
+| Database | MySQL |
 | Auth | JWT (JSON Web Tokens), bcryptjs |
 
 ---
@@ -36,7 +36,7 @@ A full-stack web application for managing a library — built with **React**, **
 library-management-system/
 ├── backend/
 │   ├── config/
-│   │   ├── db.js           # PostgreSQL connection
+│   │   ├── db.js           # MySQL connection
 │   │   └── schema.sql      # Database schema
 │   ├── middleware/
 │   │   └── auth.js         # JWT + role middleware
@@ -69,7 +69,7 @@ library-management-system/
 
 ### Prerequisites
 - Node.js (v16+)
-- PostgreSQL (v13+)
+- MySQL (v8+)
 
 ### 1. Clone the repository
 ```bash
@@ -79,11 +79,11 @@ cd library-management-system
 
 ### 2. Setup Database
 ```sql
--- In PostgreSQL, create a database
+-- In MySQL, create a database
 CREATE DATABASE library_db;
 
--- Then run the schema
-\i backend/config/schema.sql
+-- Then run the schema (in MySQL CLI or MySQL Workbench)
+SOURCE backend/config/schema.sql;
 ```
 
 ### 3. Setup Backend
@@ -91,7 +91,7 @@ CREATE DATABASE library_db;
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with your PostgreSQL credentials and JWT secret
+# Edit .env with your MySQL credentials and JWT secret
 npm run dev
 ```
 
@@ -150,6 +150,18 @@ npm start
 | GET | /api/users | All users (admin) |
 | GET | /api/users/stats | Dashboard stats (admin) |
 | DELETE | /api/users/:id | Delete user (admin) |
+
+---
+
+## Resume Summary
+
+> **Library Management System** | React, Node.js, Express.js, MySQL | [GitHub Link]
+>
+> - Developed a full-stack web application enabling library members to browse, search, and borrow books with real-time availability tracking
+> - Implemented role-based authentication (Admin/Member) using JWT and bcrypt for secure login and protected route access
+> - Built RESTful API with 15+ endpoints for book management, borrow/return workflow, and automatic overdue fine calculation (₹5/day)
+> - Designed normalized MySQL database schema with relational tables, foreign key constraints, and ENUM-based status tracking
+> - Admin dashboard with live statistics (total books, active borrows, overdue records) and full CRUD operations for books and users
 
 ---
 
