@@ -10,19 +10,23 @@ router.get('/', async (req, res) => {
     const { search, genre } = req.query;
     let query = 'SELECT * FROM books';
     const params = [];
+    const conditions = [];
 
     if (search) {
-      params.push(`%${search}%`);
-      query += ` WHERE (title ILIKE $${params.length} OR author ILIKE $${params.length})`;
+      conditions.push('(title LIKE ? OR author LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
     }
     if (genre) {
+      conditions.push('genre = ?');
       params.push(genre);
-      query += search ? ` AND genre = $${params.length}` : ` WHERE genre = $${params.length}`;
     }
-
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
     query += ' ORDER BY created_at DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+
+    const [rows] = await pool.query(query, params);
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -31,10 +35,10 @@ router.get('/', async (req, res) => {
 // Get single book
 router.get('/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM books WHERE id = $1', [req.params.id]);
-    if (result.rows.length === 0)
+    const [rows] = await pool.query('SELECT * FROM books WHERE id = ?', [req.params.id]);
+    if (rows.length === 0)
       return res.status(404).json({ message: 'Book not found' });
-    res.json(result.rows[0]);
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -47,14 +51,16 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
     return res.status(400).json({ message: 'Title, author, and ISBN are required' });
 
   try {
-    const result = await pool.query(
+    const copies = total_copies || 1;
+    const [result] = await pool.query(
       `INSERT INTO books (title, author, isbn, genre, published_year, total_copies, available_copies, description, cover_image)
-       VALUES ($1,$2,$3,$4,$5,$6,$6,$7,$8) RETURNING *`,
-      [title, author, isbn, genre, published_year, total_copies || 1, description, cover_image]
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [title, author, isbn, genre, published_year, copies, copies, description, cover_image]
     );
-    res.status(201).json(result.rows[0]);
+    const [newBook] = await pool.query('SELECT * FROM books WHERE id = ?', [result.insertId]);
+    res.status(201).json(newBook[0]);
   } catch (err) {
-    if (err.code === '23505') return res.status(400).json({ message: 'ISBN already exists' });
+    if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ message: 'ISBN already exists' });
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
@@ -63,14 +69,17 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
 router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { title, author, isbn, genre, published_year, total_copies, description, cover_image } = req.body;
   try {
-    const result = await pool.query(
-      `UPDATE books SET title=$1, author=$2, isbn=$3, genre=$4, published_year=$5,
-       total_copies=$6, description=$7, cover_image=$8 WHERE id=$9 RETURNING *`,
+    const [existing] = await pool.query('SELECT * FROM books WHERE id = ?', [req.params.id]);
+    if (existing.length === 0)
+      return res.status(404).json({ message: 'Book not found' });
+
+    await pool.query(
+      `UPDATE books SET title=?, author=?, isbn=?, genre=?, published_year=?,
+       total_copies=?, description=?, cover_image=? WHERE id=?`,
       [title, author, isbn, genre, published_year, total_copies, description, cover_image, req.params.id]
     );
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: 'Book not found' });
-    res.json(result.rows[0]);
+    const [updated] = await pool.query('SELECT * FROM books WHERE id = ?', [req.params.id]);
+    res.json(updated[0]);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -79,9 +88,10 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 // Delete book (admin only)
 router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM books WHERE id = $1 RETURNING *', [req.params.id]);
-    if (result.rows.length === 0)
+    const [existing] = await pool.query('SELECT * FROM books WHERE id = ?', [req.params.id]);
+    if (existing.length === 0)
       return res.status(404).json({ message: 'Book not found' });
+    await pool.query('DELETE FROM books WHERE id = ?', [req.params.id]);
     res.json({ message: 'Book deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

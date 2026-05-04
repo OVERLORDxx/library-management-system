@@ -11,30 +11,32 @@ router.post('/borrow', authMiddleware, async (req, res) => {
 
   try {
     // Check if book is available
-    const book = await pool.query('SELECT * FROM books WHERE id = $1', [book_id]);
-    if (book.rows.length === 0)
+    const [book] = await pool.query('SELECT * FROM books WHERE id = ?', [book_id]);
+    if (book.length === 0)
       return res.status(404).json({ message: 'Book not found' });
-    if (book.rows[0].available_copies < 1)
+    if (book[0].available_copies < 1)
       return res.status(400).json({ message: 'No copies available' });
 
     // Check if already borrowed
-    const existing = await pool.query(
-      "SELECT * FROM borrow_records WHERE user_id=$1 AND book_id=$2 AND status='borrowed'",
+    const [existing] = await pool.query(
+      "SELECT * FROM borrow_records WHERE user_id=? AND book_id=? AND status='borrowed'",
       [user_id, book_id]
     );
-    if (existing.rows.length > 0)
+    if (existing.length > 0)
       return res.status(400).json({ message: 'You already borrowed this book' });
 
     // Create borrow record
-    const record = await pool.query(
-      `INSERT INTO borrow_records (user_id, book_id) VALUES ($1, $2) RETURNING *`,
+    const [result] = await pool.query(
+      `INSERT INTO borrow_records (user_id, book_id, borrow_date, due_date)
+       VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY))`,
       [user_id, book_id]
     );
+    const [record] = await pool.query('SELECT * FROM borrow_records WHERE id = ?', [result.insertId]);
 
     // Decrease available copies
-    await pool.query('UPDATE books SET available_copies = available_copies - 1 WHERE id = $1', [book_id]);
+    await pool.query('UPDATE books SET available_copies = available_copies - 1 WHERE id = ?', [book_id]);
 
-    res.status(201).json({ message: 'Book borrowed successfully', record: record.rows[0] });
+    res.status(201).json({ message: 'Book borrowed successfully', record: record[0] });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -45,14 +47,14 @@ router.put('/return/:id', authMiddleware, async (req, res) => {
   const record_id = req.params.id;
 
   try {
-    const record = await pool.query('SELECT * FROM borrow_records WHERE id = $1', [record_id]);
-    if (record.rows.length === 0)
+    const [rows] = await pool.query('SELECT * FROM borrow_records WHERE id = ?', [record_id]);
+    if (rows.length === 0)
       return res.status(404).json({ message: 'Borrow record not found' });
-    if (record.rows[0].status === 'returned')
+    if (rows[0].status === 'returned')
       return res.status(400).json({ message: 'Book already returned' });
 
     // Calculate fine (₹5 per day overdue)
-    const dueDate = new Date(record.rows[0].due_date);
+    const dueDate = new Date(rows[0].due_date);
     const today = new Date();
     let fine = 0;
     if (today > dueDate) {
@@ -60,14 +62,15 @@ router.put('/return/:id', authMiddleware, async (req, res) => {
       fine = daysOverdue * 5;
     }
 
-    const updated = await pool.query(
-      `UPDATE borrow_records SET status='returned', return_date=CURRENT_DATE, fine=$1 WHERE id=$2 RETURNING *`,
+    await pool.query(
+      `UPDATE borrow_records SET status='returned', return_date=CURDATE(), fine=? WHERE id=?`,
       [fine, record_id]
     );
+    const [updated] = await pool.query('SELECT * FROM borrow_records WHERE id = ?', [record_id]);
 
-    await pool.query('UPDATE books SET available_copies = available_copies + 1 WHERE id = $1', [record.rows[0].book_id]);
+    await pool.query('UPDATE books SET available_copies = available_copies + 1 WHERE id = ?', [rows[0].book_id]);
 
-    res.json({ message: 'Book returned successfully', fine, record: updated.rows[0] });
+    res.json({ message: 'Book returned successfully', fine, record: updated[0] });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -76,15 +79,15 @@ router.put('/return/:id', authMiddleware, async (req, res) => {
 // Get my borrow history (member)
 router.get('/my', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(
+    const [rows] = await pool.query(
       `SELECT br.*, b.title, b.author, b.cover_image
        FROM borrow_records br
        JOIN books b ON br.book_id = b.id
-       WHERE br.user_id = $1
+       WHERE br.user_id = ?
        ORDER BY br.created_at DESC`,
       [req.user.id]
     );
-    res.json(result.rows);
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -93,14 +96,14 @@ router.get('/my', authMiddleware, async (req, res) => {
 // Get all borrow records (admin only)
 router.get('/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(
+    const [rows] = await pool.query(
       `SELECT br.*, b.title, b.author, u.name AS user_name, u.email AS user_email
        FROM borrow_records br
        JOIN books b ON br.book_id = b.id
        JOIN users u ON br.user_id = u.id
        ORDER BY br.created_at DESC`
     );
-    res.json(result.rows);
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -111,7 +114,7 @@ router.put('/update-overdue', authMiddleware, adminMiddleware, async (req, res) 
   try {
     await pool.query(
       `UPDATE borrow_records SET status='overdue'
-       WHERE status='borrowed' AND due_date < CURRENT_DATE`
+       WHERE status='borrowed' AND due_date < CURDATE()`
     );
     res.json({ message: 'Overdue records updated' });
   } catch (err) {

@@ -12,23 +12,28 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
 
   try {
-    const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0)
+    const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existing.length > 0)
       return res.status(400).json({ message: 'Email already registered' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, role',
+    const [result] = await pool.query(
+      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
       [name, email, hashedPassword]
     );
 
+    const [newUser] = await pool.query(
+      'SELECT id, name, email, role FROM users WHERE id = ?',
+      [result.insertId]
+    );
+
     const token = jwt.sign(
-      { id: result.rows[0].id, role: result.rows[0].role },
+      { id: newUser[0].id, role: newUser[0].role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    res.status(201).json({ user: result.rows[0], token });
+    res.status(201).json({ user: newUser[0], token });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -41,11 +46,11 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' });
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (result.rows.length === 0)
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (rows.length === 0)
       return res.status(400).json({ message: 'Invalid email or password' });
 
-    const user = result.rows[0];
+    const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ message: 'Invalid email or password' });
