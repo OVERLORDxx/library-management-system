@@ -1,17 +1,12 @@
-import axios from 'axios';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
 
-const API = axios.create({
-  baseURL: 'https://library-backend-5ipk.onrender.com/api',
-});
+const root = ReactDOM.createRoot(document.getElementById('root'));
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
-export default API;
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
