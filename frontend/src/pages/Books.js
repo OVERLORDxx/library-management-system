@@ -9,6 +9,7 @@ const Books = () => {
   const [search, setSearch] = useState('');
   const [genre, setGenre] = useState('');
   const [loading, setLoading] = useState(true);
+
   const { user } = useAuth();
 
   const fetchBooks = async () => {
@@ -84,16 +85,15 @@ const Books = () => {
 
       {loading ? (
         <div className="loading">Loading books...</div>
+      ) : books.length === 0 ? (
+        <div className="no-books">No books found.</div>
       ) : (
         <div className="books-grid">
           {books.map((book) => (
             <div className="book-card" key={book.id}>
               <div className="book-cover">
                 {book.cover_image ? (
-                  <img
-                    src={book.cover_image}
-                    alt={book.title}
-                  />
+                  <img src={book.cover_image} alt={book.title} />
                 ) : (
                   <div className="book-placeholder">📖</div>
                 )}
@@ -133,12 +133,8 @@ const Books = () => {
                 {user && user.role === 'user' && (
                   <button
                     className="btn-borrow"
-                    onClick={() =>
-                      handleBorrow(book.id)
-                    }
-                    disabled={
-                      book.available_copies === 0
-                    }
+                    onClick={() => handleBorrow(book.id)}
+                    disabled={book.available_copies === 0}
                   >
                     {book.available_copies > 0
                       ? 'Borrow Book'
