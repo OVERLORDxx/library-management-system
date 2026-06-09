@@ -61,6 +61,7 @@ const Books = () => {
     <div className="books-container">
       <div className="books-header">
         <h1>📚 Book Catalog</h1>
+<p>{JSON.stringify(user)}</p>
 
         <form className="search-bar" onSubmit={handleSearch}>
           <input
