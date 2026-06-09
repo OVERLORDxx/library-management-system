@@ -38,11 +38,6 @@ const Books = () => {
   };
 
   const handleBorrow = async (bookId) => {
-    if (!user) {
-      toast.warning('Please login to borrow books');
-      return;
-    }
-
     try {
       await API.post('/borrow/borrow', {
         book_id: bookId,
@@ -61,7 +56,6 @@ const Books = () => {
     <div className="books-container">
       <div className="books-header">
         <h1>📚 Book Catalog</h1>
-<p>{JSON.stringify(user)}</p>
 
         <form className="search-bar" onSubmit={handleSearch}>
           <input
@@ -77,13 +71,11 @@ const Books = () => {
           >
             <option value="">All Genres</option>
             <option value="Fiction">Fiction</option>
-            <option value="Non-Fiction">Non-Fiction</option>
-            <option value="Science">Science</option>
-            <option value="Technology">Technology</option>
-            <option value="History">History</option>
-            <option value="Biography">Biography</option>
-            <option value="Mystery">Mystery</option>
-            <option value="Fantasy">Fantasy</option>
+            <option value="Self Help">Self Help</option>
+            <option value="Programming">Programming</option>
+            <option value="Finance">Finance</option>
+            <option value="Motivation">Motivation</option>
+            <option value="Productivity">Productivity</option>
           </select>
 
           <button type="submit">Search</button>
@@ -92,8 +84,6 @@ const Books = () => {
 
       {loading ? (
         <div className="loading">Loading books...</div>
-      ) : books.length === 0 ? (
-        <div className="no-books">No books found.</div>
       ) : (
         <div className="books-grid">
           {books.map((book) => (
@@ -140,10 +130,12 @@ const Books = () => {
                   </span>
                 </div>
 
-                {user && (
+                {user && user.role === 'user' && (
                   <button
                     className="btn-borrow"
-                    onClick={() => handleBorrow(book.id)}
+                    onClick={() =>
+                      handleBorrow(book.id)
+                    }
                     disabled={
                       book.available_copies === 0
                     }
