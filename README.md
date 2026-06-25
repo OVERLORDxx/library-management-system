@@ -6,14 +6,14 @@ A full-stack web application for managing a library — built with **React**, **
 
 ### Member (User)
 - Register & Login with JWT authentication
-- Browse and search books by title, author, or genre
+- Browse and search books by title, author, or genre (synchronized dropdowns)
 - Borrow books (limited to available copies)
-- Return books and view overdue fine
+- Return books and view **real-time accrued overdue fines** calculated dynamically on-the-fly
 - View personal borrow history
 
 ### Admin
 - Dashboard with live statistics (total books, users, borrows, overdue)
-- Add, edit, and delete books
+- Add, edit, and delete books with **ISBN-based Auto-Fill** querying Open Library API
 - View and manage all registered users
 - View all borrow records and update overdue status
 
@@ -25,7 +25,8 @@ A full-stack web application for managing a library — built with **React**, **
 |---|---|
 | Frontend | React 18, React Router v6, Axios, React Toastify |
 | Backend | Node.js, Express.js |
-| Database | MySQL |
+| Database | MySQL, Aiven MySQL (SSL Enabled configuration) |
+| APIs | Open Library Books API (ISBN Metadata lookup) |
 | Auth | JWT (JSON Web Tokens), bcryptjs |
 
 ---
@@ -155,13 +156,13 @@ npm start
 
 ## Resume Summary
 
-> **Library Management System** | React, Node.js, Express.js, MySQL | [GitHub Link]
+> **Library Management System** | React, Node.js, Express.js, MySQL, Aiven | https://github.com/OVERLORDxx/library-management-system
 >
-> - Developed a full-stack web application enabling library members to browse, search, and borrow books with real-time availability tracking
-> - Implemented role-based authentication (Admin/Member) using JWT and bcrypt for secure login and protected route access
-> - Built RESTful API with 15+ endpoints for book management, borrow/return workflow, and automatic overdue fine calculation (₹5/day)
-> - Designed normalized MySQL database schema with relational tables, foreign key constraints, and ENUM-based status tracking
-> - Admin dashboard with live statistics (total books, active borrows, overdue records) and full CRUD operations for books and users
+> - Developed a full-stack library management system featuring a responsive React frontend, Express.js backend, and Aiven MySQL database.
+> - Integrated the Open Library Books API using ISBN lookups to auto-fetch title, author, description, and cover images for catalog items.
+> - Built real-time overdue fine tracking by computing active fines dynamically on-the-fly using database-level SQL queries (DATEDIFF).
+> - Implemented role-based session authentication (Admin/Member) using secure JSON Web Tokens (JWT) and bcrypt password hashing.
+> - Admin dashboard featuring live statistics (total books, active borrows, overdue counts) and complete CRUD operations for catalog management.
 
 ---
 

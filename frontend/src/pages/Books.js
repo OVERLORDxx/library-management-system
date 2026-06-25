@@ -71,12 +71,16 @@ const Books = () => {
             onChange={(e) => setGenre(e.target.value)}
           >
             <option value="">All Genres</option>
-            <option value="Fiction">Fiction</option>
-            <option value="Self Help">Self Help</option>
-            <option value="Programming">Programming</option>
-            <option value="Finance">Finance</option>
-            <option value="Motivation">Motivation</option>
-            <option value="Productivity">Productivity</option>
+            {[
+              'Fiction',
+              'Non-Fiction',
+              'Science & Technology',
+              'Programming',
+              'Business & Finance',
+              'History & Biography',
+              'Self-Help',
+              'Mystery & Fantasy'
+            ].map(g => <option key={g} value={g}>{g}</option>)}
           </select>
 
           <button type="submit">Search</button>

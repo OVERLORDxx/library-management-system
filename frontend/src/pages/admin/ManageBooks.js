@@ -5,6 +5,17 @@ import './ManageBooks.css';
 
 const emptyForm = { title: '', author: '', isbn: '', genre: '', published_year: '', total_copies: 1, description: '', cover_image: '' };
 
+const genres = [
+  'Fiction',
+  'Non-Fiction',
+  'Science & Technology',
+  'Programming',
+  'Business & Finance',
+  'History & Biography',
+  'Self-Help',
+  'Mystery & Fantasy'
+];
+
 const ManageBooks = () => {
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -21,6 +32,57 @@ const ManageBooks = () => {
   useEffect(() => { fetchBooks(); }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const fetchBookMetadata = async () => {
+    if (!form.isbn) {
+      toast.warning('Please enter an ISBN first');
+      return;
+    }
+    const cleanIsbn = form.isbn.trim().replace(/[-\s]/g, '');
+    toast.info('Fetching book metadata...');
+    try {
+      const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
+      const data = await res.json();
+      const bookKey = `ISBN:${cleanIsbn}`;
+      
+      if (data && data[bookKey]) {
+        const bookData = data[bookKey];
+        const title = bookData.title || '';
+        const author = bookData.authors ? bookData.authors.map(a => a.name).join(', ') : '';
+        const published_year = bookData.publish_date ? (bookData.publish_date.match(/\d{4}/)?.[0] || '') : '';
+        const description = bookData.notes || (bookData.excerpts ? bookData.excerpts[0]?.text : '') || '';
+        const cover_image = bookData.cover ? (bookData.cover.large || bookData.cover.medium || bookData.cover.small || '') : '';
+        
+        let detectedGenre = '';
+        if (bookData.subjects && bookData.subjects.length > 0) {
+          const subjects = bookData.subjects.map(s => s.name.toLowerCase());
+          for (const g of genres) {
+            const parts = g.split('&').map(p => p.trim().toLowerCase());
+            if (subjects.some(s => parts.some(p => s.includes(p)))) {
+              detectedGenre = g;
+              break;
+            }
+          }
+        }
+
+        setForm(prev => ({
+          ...prev,
+          title: title || prev.title,
+          author: author || prev.author,
+          published_year: published_year || prev.published_year,
+          description: description || prev.description,
+          cover_image: cover_image || prev.cover_image,
+          genre: detectedGenre || prev.genre
+        }));
+        toast.success('Book metadata auto-filled!');
+      } else {
+        toast.warn('No metadata found for this ISBN on Open Library.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch metadata.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,12 +138,18 @@ const ManageBooks = () => {
             <div className="form-group"><label>Author *</label><input name="author" value={form.author} onChange={handleChange} required /></div>
           </div>
           <div className="form-row">
-            <div className="form-group"><label>ISBN *</label><input name="isbn" value={form.isbn} onChange={handleChange} required /></div>
+            <div className="form-group">
+              <label>ISBN *</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input name="isbn" value={form.isbn} onChange={handleChange} required />
+                <button type="button" className="btn-autofill" onClick={fetchBookMetadata}>Auto-Fill</button>
+              </div>
+            </div>
             <div className="form-group">
               <label>Genre</label>
               <select name="genre" value={form.genre} onChange={handleChange}>
                 <option value="">Select Genre</option>
-                {['Fiction','Non-Fiction','Science','Technology','History','Biography','Mystery','Fantasy'].map(g => <option key={g}>{g}</option>)}
+                {genres.map(g => <option key={g}>{g}</option>)}
               </select>
             </div>
           </div>

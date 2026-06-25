@@ -80,7 +80,11 @@ router.put('/return/:id', authMiddleware, async (req, res) => {
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT br.*, b.title, b.author, b.cover_image
+      `SELECT br.id, br.user_id, br.book_id, br.borrow_date, br.due_date, br.return_date, br.status, br.created_at,
+              b.title, b.author, b.cover_image,
+              IF(br.status != 'returned' AND br.due_date < CURDATE(),
+                 DATEDIFF(CURDATE(), br.due_date) * 5.00,
+                 br.fine) AS fine
        FROM borrow_records br
        JOIN books b ON br.book_id = b.id
        WHERE br.user_id = ?
@@ -97,7 +101,11 @@ router.get('/my', authMiddleware, async (req, res) => {
 router.get('/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT br.*, b.title, b.author, u.name AS user_name, u.email AS user_email
+      `SELECT br.id, br.user_id, br.book_id, br.borrow_date, br.due_date, br.return_date, br.status, br.created_at,
+              b.title, b.author, u.name AS user_name, u.email AS user_email,
+              IF(br.status != 'returned' AND br.due_date < CURDATE(),
+                 DATEDIFF(CURDATE(), br.due_date) * 5.00,
+                 br.fine) AS fine
        FROM borrow_records br
        JOIN books b ON br.book_id = b.id
        JOIN users u ON br.user_id = u.id
