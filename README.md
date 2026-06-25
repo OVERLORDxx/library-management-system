@@ -1,6 +1,6 @@
 # Library Management System
 
-A full-stack web application for managing a library — built with **React**, **Node.js (Express)**, and **MySQL**.
+A full-stack web application for managing a library — built with **React**, **Node.js (Express)**, and **MySQL** (fully compatible with cloud-hosted **Aiven MySQL**). Features real-time accrued overdue fine calculations and ISBN-based book metadata auto-fill via the **Open Library Books API**.
 
 ## Features
 
@@ -74,7 +74,7 @@ library-management-system/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/library-management-system.git
+git clone https://github.com/OVERLORDxx/library-management-system.git
 cd library-management-system
 ```
 
