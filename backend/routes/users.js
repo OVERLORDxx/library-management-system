@@ -20,7 +20,7 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
 router.get('/stats', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [[totalBooks]] = await pool.query('SELECT COUNT(*) AS count FROM books');
-    const [[totalUsers]] = await pool.query("SELECT COUNT(*) AS count FROM users WHERE role='member'");
+    const [[totalUsers]] = await pool.query("SELECT COUNT(*) AS count FROM users WHERE role IN ('member', 'user')");
     const [[activeBorrows]] = await pool.query("SELECT COUNT(*) AS count FROM borrow_records WHERE status='borrowed'");
     const [[overdueBooks]] = await pool.query("SELECT COUNT(*) AS count FROM borrow_records WHERE status='overdue'");
 

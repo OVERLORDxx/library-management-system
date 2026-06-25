@@ -134,7 +134,7 @@ const Books = () => {
                   </span>
                 </div>
 
-                {user && user.role === 'user' && (
+                {user && (user.role === 'user' || user.role === 'member') && (
                   <button
                     className="btn-borrow"
                     onClick={() => handleBorrow(book.id)}

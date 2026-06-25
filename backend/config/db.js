@@ -92,6 +92,14 @@ async function initializeDatabase() {
         await conn.query(statement);
       }
       console.log('Database tables successfully verified/created.');
+      
+      // Ensure 'user' role is allowed in the ENUM if the database was previously initialized with only ('admin', 'member')
+      try {
+        await conn.query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'member', 'user') DEFAULT 'user';");
+        console.log('Successfully updated users role column ENUM.');
+      } catch (alterErr) {
+        console.warn('Could not alter users table (might be fine if already modified):', alterErr.message);
+      }
     } finally {
       conn.release();
     }
